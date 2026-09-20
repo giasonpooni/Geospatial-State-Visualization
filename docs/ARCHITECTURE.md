@@ -11,39 +11,10 @@ flows, panels — is derived from immutable snapshots handed across a typed
 boundary; view-level operations (select, focus, toggle layer, scrub time) act
 on the projection only.
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                          PAYLOAD                             │
-│  (DAF → Canonical State → Spatial Corpus → PostGIS → API)    │
-└───────────────────────────┬──────────────────────────────────┘
-                            │ WorldSnapshot / stateAt()
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  CANONICAL STATE (contracts.ts)                              │
-│    entities · routes · flows · assertions · observations     │
-└───────────────────────────┬──────────────────────────────────┘
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  SPATIAL STATE / GRAPH (store.ts)                            │
-│    indexes · joins · temporal resolution · search            │
-└───────────────────────────┬──────────────────────────────────┘
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  VISUALIZATION API (app/api.ts — AppApi facade)              │
-└───────────────────────────┬──────────────────────────────────┘
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  DIGITAL TWIN CLIENT (UI · command bar · timeline · panels)  │
-└───────────────────────────┬──────────────────────────────────┘
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  EARTH / ROUTES / ENTITIES (earth/*, layers/*, geo/*)        │
-└───────────────────────────┬──────────────────────────────────┘
-                            ▼
-┌──────────────────────────────────────────────────────────────┐
-│  RENDERER (three.js scene, GPU particles, LOD)               │
-└──────────────────────────────────────────────────────────────┘
-```
+`SyntheticProvider` supplies a `WorldSnapshot` to `WorldStore`. The `AppApi`
+facade exposes read-only state and view operations to the UI; the Earth and
+route layers project that state through Three.js. This build uses synthetic
+records and has no live Payload Spatial API connection.
 
 State flows down; nothing flows back up. UI components receive `AppApi` and
 nothing else — they never import renderer internals and never mutate data
@@ -73,12 +44,7 @@ type stripping — which is exactly what the provenance check does.
 
 Every record that claims to describe the world carries a `Provenance` block
 (`contracts.ts`): `source`, `knownAt`, optional validity window, evidence
-descriptors, and confidence. The `source` field is the same field real data
-will use:
-
-- today: `'synthetic:demo'`
-- tomorrow: `'payload:canonical'`, `'payload:spatial'`, `'external:ais'`,
-  `'external:osm'`, `'external:gov-gis'`, ...
+descriptors, and confidence. This build uses `source: 'synthetic:demo'`.
 
 `scripts/validate-provenance.mjs` does not lint types — it **executes the
 real dataset** (`buildWorldSnapshot()` from `src/data/synthetic/world.ts`)
@@ -86,9 +52,7 @@ and fails the build if any node, route, flow, commodity, event, constraint,
 assertion, or observation lacks `provenance.source`.
 
 The point: **"is this real?" is a query, not a memory.** The inspector, the
-disclaimer, and any future mixed-provenance world all read the same field on
-the same records; swapping synthetic data for corpus data touches providers,
-never the render layer.
+disclaimer, and inspector read the same field on each record.
 
 Related: `Route.geometryBasis` (`'routed' | 'great_circle_estimate' |
 'synthetic_corridor'`) keeps *what the geometry is* queryable too — a straight
@@ -156,18 +120,9 @@ interface SpatialDataProvider {
 
 `SyntheticProvider` (`src/data/synthetic/provider.ts`) implements it today:
 all dynamic state is a pure function of `(entityId, t)` — hash-seeded
-sinusoids plus smooth event ramps, no randomness, no wall clock. A Payload
-Spatial API client implements the same interface tomorrow:
-
-- `load()` / `stateAt()` are mandatory;
-- `query(viewport)` enables server-side spatial filtering — bbox, camera
-  altitude, and minimum importance map naturally onto PostGIS window queries
-  and vector tiles;
-- `subscribe()` enables push deltas from canonical state.
-
-The future-integration path is provider-independence end to end:
-**DAF → Canonical State → Spatial Corpus → PostGIS → Spatial API → Twin** —
-the renderer changes for none of these steps.
+sinusoids plus smooth event ramps, no randomness, no wall clock. The interface
+requires `load()` and `stateAt()`; `query()` and `subscribe()` are optional.
+No live provider is implemented in this build.
 
 `WorldStore` (`src/data/store.ts`) sits on top of whichever provider is
 plugged in: it indexes the snapshot (nodes, routes-by-node, flows-by-route,
@@ -209,12 +164,11 @@ Three.js scene composed from independent modules:
 - **Camera** (`src/core/cameraController.ts` behind `CameraFacade`): fly-to,
   route framing, and the cinematic follow-path dolly used by Follow the Load.
 
-## 7. The command surface as a future agent tool surface
+## 7. Command and tool interfaces
 
 The command bar grammar lives in `src/app/commands.ts`: pure functions
 (`executeCommand`, `suggestCommands`) over the `AppApi` facade — no module
-state, no DOM. Every operation an agent would need is already expressed as a
-facade call: layer toggles, presets, search/focus, flow filtering, clock
+state, no DOM. The facade exposes: layer toggles, presets, search/focus, flow filtering, clock
 control, route comparison, the demo scenario.
 
 `src/app/toolSurface.ts` implements the GeoAgent pattern: **one structured
@@ -226,8 +180,7 @@ in `commands.ts` is one front end to the same facade; an agent binding
 (Payload agents, MCP, tool-use) consumes the registry directly — it is
 exposed at runtime as `window.payloadEarth.tools` with
 `window.payloadEarth.invokeTool(name, args)`. Capabilities stay defined
-once; confirmation gates slot in without changing the shape the day a
-mutating operation exists.
+once. The registry currently exposes view operations only.
 
 ## 8. Temporal model
 
@@ -255,38 +208,13 @@ Clock changes fan out through the typed `EventBus` (`src/core/events.ts`) as
 `TemporalState` events; the timeline UI, layers, and status bar all subscribe
 to the same stream.
 
-## 9. Two surfaces, one state: where this renderer sits
+## 9. Scope
 
-The Payload twin has levels, and they are not the same problem:
+This renderer presents synthetic network data at a planetary scale. It does not
+simulate physical facilities, vehicles, or ocean dynamics, and its forecasts
+are synthetic demo values rather than measured outcomes.
 
-- **Levels 0–2 — the network twin** (where is everything, what is at risk,
-  what does the flow look like). Two surfaces project it:
-  - **The operator map** (Payload Terminal): MapLibre GL basemap +
-    deck.gl moving/dense layers + Turf client-side spatial predicates +
-    D3 side panels. Working-grain, dispatcher-facing.
-  - **This renderer (Payload Earth)**: the cinematic planet-scale world
-    view — custom Three.js globe, shader terminator, GPU flow particles.
-    Situational-grain, world-facing.
-
-  Both are projections over the same contracts through the same provider
-  seam; neither is authoritative; they must never drift into two
-  representations of state (the contracts in `src/data/contracts.ts` are
-  the single vocabulary).
-
-- **Levels 3–5 — the facility/asset twin** (a specific yard, dock or
-  vehicle in real 3D). Game-engine territory (Unity/Isaac; BADOSE is a
-  maritime-specific instance). Deferred, and only relevant if physical
-  operations are ever operated directly.
-
-**A twin is a state mirror, not a simulator.** Ocean-dynamics (Veros) and
-vehicle-control (BADOSE) engines compute *what would happen* at the wrong
-grain; the twin renders *what is happening* as observed state. The one
-place simulation belongs is the counterfactual branch — propagation +
-re-optimization over twin state, rendered as an explicitly marked
-hypothetical frame (`TemporalRegime: 'scenario'` is reserved for exactly
-this). A simulated outcome is not an outcome.
-
-## 10. Disciplines carried from the Terminal
+## 10. Display semantics
 
 These are product requirements of the whole platform, present in this
 renderer from the first record:
@@ -311,6 +239,3 @@ renderer from the first record:
   difference between a routed path and an estimate queryable. All
   distances derived in this client are great-circle estimates and are
   presented as such, never as road distance.
-- **Cluster placement** (future, at corpus scale): centroids on the sphere
-  via vector mean at minimum (correct across the antimeridian, unlike
-  lon/lat averaging), geodesic median where outlier robustness matters.
