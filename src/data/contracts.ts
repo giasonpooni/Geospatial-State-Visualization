@@ -312,11 +312,13 @@ export interface Deviation {
   entityId: EntityId;
   assertionId: EntityId;
   observationId: EntityId;
+  /** Complete ordered contributors; observationId remains the final member. */
+  observationIds: EntityId[];
   metric: string;
   /** observed − asserted, in the metric's unit. */
   delta: number;
-  /** observed / asserted. */
-  ratio: number;
+  /** observed / asserted; null when the asserted value is zero. */
+  ratio: number | null;
 }
 
 // ------------------------------------------------------------------

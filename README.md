@@ -69,15 +69,23 @@ npm ci
 npm run dev      # Vite dev server
 npm run build    # runs check, then production build
 npm run check    # seam + provenance + types
+npm test         # Node 24 provider, comparison and view-tool regressions
 ```
 
-`npm run check` enforces three invariants and fails the build on any violation:
+`npm run check` runs the following checks and fails the build on any violation:
 
 | Check | Script | What it enforces |
 |---|---|---|
 | Seam | `scripts/check-seam.mjs` | `src/data/**` is renderer-blind: no bare-module imports, no relative imports escaping the data layer (only the pure kernels `src/core/events.ts` and `src/core/time.ts` are allowed). |
 | Provenance | `scripts/validate-provenance.mjs` | Executes the real synthetic dataset and fails on any record missing `provenance.source`. |
+| Runtime boundary | `node --test tests/*.test.mjs` | Validated, immutable snapshot replacement; identity/reference/time/unit eligibility; explicit comparison refusals; strict view-tool inputs. |
 | Types | `tsc --noEmit` | TypeScript strict mode across the whole tree. |
+
+The provider boundary now validates and detaches snapshots before atomic
+replacement. Comparisons require an explicit knowledge cutoff and half-open
+event-time window; missing or different units are not converted implicitly,
+and a zero assertion has an undefined (`null`) ratio. See
+[`docs/PROVIDER_BOUNDARY.md`](docs/PROVIDER_BOUNDARY.md) for API changes and limits.
 
 ## Controls & interaction
 

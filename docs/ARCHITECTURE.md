@@ -14,8 +14,10 @@ The client is a **projection** of provider-supplied geographic state. It has no
 canonical-state write or evidence-admission API. Everything visual — globe,
 routes, particle flows, panels — is derived from snapshots handed across a typed
 boundary; view-level operations (select, focus, toggle layer, scrub time) act
-on the projection only. Snapshots are treated as read-only by the client design;
-the current TypeScript shapes and returned objects are not deeply immutable.
+on the projection only. `validatedSnapshot` checks bounded plain data and makes
+a detached, deeply frozen snapshot. `WorldStore.init` prepares fresh indexes
+before atomically replacing snapshot, provider and indexes. A stale pending
+load cannot overwrite a newer selection. This does not authenticate the provider.
 
 `SyntheticProvider` supplies a `WorldSnapshot` to `WorldStore`. The `AppApi`
 facade exposes read-only state and view operations to the UI; the Earth and
@@ -84,9 +86,20 @@ field overwritten by another:
 - **`Deviation`** — the join: `delta = observed − asserted`,
   `ratio = observed / asserted`, referencing both records.
 
-`WorldStore.deviationsFor(entityId)` (`store.ts`) performs this join **on
-demand**, matching assertions to observations by metric and computing the
-mean observed value; nothing is stored back, nothing is overwritten.
+`WorldStore.deviationsFor(entityId, { knownAt, from, to })` (`store.ts`) performs
+this join on demand. The explicit knowledge cutoff and half-open event window
+`[from,to)` are distinct clocks. Comparisons require identical declared units,
+an assertion with an explicit applicability interval, and point observations
+inside that interval and any declared observation validity. Every exclusion has
+a reason. The descriptive mean retains all contributing IDs and source records;
+it does not establish independent samples, precision or source truth. A zero
+assertion yields `ratio: null`; no compatible records yield an unavailable
+comparison, not a zero. Nothing is stored back or overwritten.
+
+The inspector passes the selected simulation cursor as knowledge cutoff and
+event-window end, starting the window at the dataset start; the initial empty
+window shows no comparison. Full API details and compatibility changes are in
+[`PROVIDER_BOUNDARY.md`](PROVIDER_BOUNDARY.md).
 
 `Route.estimatedDurationHours` and `Route.capacity` are convenience
 projections of the current assertion of record. They must **never** be
@@ -134,7 +147,11 @@ interface SpatialDataProvider {
 all dynamic state is a pure function of `(entityId, t)` — hash-seeded
 sinusoids plus smooth event ramps, no randomness, no wall clock. The interface
 requires `load()` and `stateAt()`; `query()` and `subscribe()` are optional.
-No live provider is implemented in this build.
+No live provider is implemented in this build. Unknown synthetic entities,
+invalid UTC times and times outside the snapshot range are refused instead of
+receiving synthetic fallback state. Returned state must name the requested
+entity and exact UTC timestamp; active event references must match the entity
+and event-time interval. These checks do not verify the dynamics model.
 
 `WorldStore` (`src/data/store.ts`) sits on top of whichever provider is
 plugged in: it indexes the snapshot (nodes, routes-by-node, flows-by-route,

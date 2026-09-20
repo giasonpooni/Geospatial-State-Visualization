@@ -20,6 +20,7 @@ import type {
 } from '../contracts';
 import type { SpatialDataProvider } from '../provider';
 import { buildWorldSnapshot } from './world.ts';
+import { identifier, instant, validatedSnapshot } from '../validation.ts';
 
 // ------------------------------------------------------------------
 // Deterministic hashing / noise
@@ -146,7 +147,7 @@ export function resolveEntityState(
   t: Timestamp,
   events: readonly WorldEvent[]
 ): EntityState {
-  const tMs = Date.parse(t);
+  const tMs = instant(t);
   const noise = syntheticNoise(entityId, tMs);
   const { boost, activeEventIds } = eventBoostAt(entityId, tMs, events);
 
@@ -178,7 +179,7 @@ export class SyntheticProvider implements SpatialDataProvider {
 
   private ensure(): WorldSnapshot {
     if (this.snap) return this.snap;
-    const snap = buildWorldSnapshot();
+    const snap = validatedSnapshot(buildWorldSnapshot());
     for (const n of snap.nodes) {
       this.baselines.set(n.id, {
         base: clamp01(0.3 + 0.45 * n.importance),
@@ -201,7 +202,10 @@ export class SyntheticProvider implements SpatialDataProvider {
 
   stateAt(entityId: EntityId, t: Timestamp): EntityState {
     const snap = this.ensure();
-    const bl = this.baselines.get(entityId) ?? { base: 0.35, status: 'active' as const };
+    const bl = this.baselines.get(identifier(entityId, 'entityId'));
+    if (!bl) throw new Error('Unknown synthetic entity');
+    const time = instant(t);
+    if (time < instant(snap.timeRange.start) || time > instant(snap.timeRange.end)) throw new Error('Time outside synthetic range');
     return resolveEntityState(entityId, bl.base, bl.status, t, snap.events);
   }
 }

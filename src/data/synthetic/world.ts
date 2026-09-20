@@ -1825,7 +1825,7 @@ function buildAssertionsAndObservations(
       value: r.estimatedDurationHours,
       unit: 'h',
       assertedAt: ASSERTED_AT,
-      provenance: prov({ knownAt: ASSERTED_AT }),
+      provenance: prov({ knownAt: ASSERTED_AT, validFrom: DATASET_START, validTo: DATASET_END }),
     });
     addObs(s.entityId, 'transit_hours', r.estimatedDurationHours, s.devMin, s.devMax, s.count, 'h');
   }
@@ -1843,7 +1843,7 @@ function buildAssertionsAndObservations(
       value: s.value,
       unit: 'h',
       assertedAt: ASSERTED_AT,
-      provenance: prov({ knownAt: ASSERTED_AT }),
+      provenance: prov({ knownAt: ASSERTED_AT, validFrom: DATASET_START, validTo: DATASET_END }),
     });
     addObs(s.entityId, 'dwell_hours', s.value, s.devMin, s.devMax, s.count, 'h');
   }

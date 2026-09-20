@@ -369,20 +369,27 @@ export function createInfoPanel(api: AppApi): { el: HTMLElement } {
     const transitRows: (HTMLElement | null)[] = [
       kv('PROMISED', `${fmt(r.estimatedDurationHours)} H`),
     ];
-    const dev = api.store
-      .deviationsFor(r.id)
+    const range = api.store.snapshot.timeRange;
+    // Scrubbing selects the knowledge cutoff. The event window stays explicit;
+    // no observation at or after the selected cursor is included.
+    const dev = simT === range.start || Date.parse(simT) <= Date.parse(range.start) ? undefined : api.store
+      .deviationsFor(r.id, { knownAt: simT, from: range.start, to: simT })
       .find((d) => d.assertion.metric === 'transit_hours');
-    if (dev) {
-      transitRows.push(kv('OBSERVED μ', `${fmt(dev.meanObserved, 1)} H`));
-      const pct = (dev.deviation.ratio - 1) * 100;
-      const over = pct > 5;
+    if (dev?.status === 'ready' && dev.deviation && dev.meanObserved !== null) {
+      transitRows.push(kv('OBSERVED μ', `${fmt(dev.meanObserved, 1)} ${dev.comparison.unit}`));
+      const pct = dev.deviation.ratio === null ? null : (dev.deviation.ratio - 1) * 100;
+      const over = pct !== null && pct > 5;
       transitRows.push(
         kv(
           'DEVIATION',
-          `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% · n=${dev.observations.length}`,
-          { tone: over ? 'warn' : 'ok' }
+          pct === null ? 'UNDEFINED RATIO — ZERO ASSERTION' : `${pct >= 0 ? '+' : ''}${pct.toFixed(1)}% · records=${dev.observations.length}`,
+          { tone: pct === null ? 'dim' : over ? 'warn' : 'ok' }
         )
       );
+      transitRows.push(kv('INDEPENDENCE', 'NOT ESTABLISHED'));
+      transitRows.push(kv('EXCLUDED RECORDS', String(dev.excluded.length)));
+    } else if (dev) {
+      transitRows.push(kv('COMPARISON', dev.reason ?? 'UNAVAILABLE', { tone: 'dim' }));
     }
     content.append(section('TRANSIT', ...transitRows));
 

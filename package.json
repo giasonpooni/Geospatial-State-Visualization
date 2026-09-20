@@ -9,7 +9,8 @@
     "build": "npm run check && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "check": "node scripts/check-seam.mjs && node scripts/validate-provenance.mjs && tsc --noEmit"
+    "test": "node --test tests/*.test.mjs",
+    "check": "node scripts/check-seam.mjs && node scripts/validate-provenance.mjs && npm test && tsc --noEmit"
   },
   "dependencies": {
     "three": "^0.180.0",

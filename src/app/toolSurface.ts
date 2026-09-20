@@ -12,6 +12,7 @@
  */
 
 import type { AppApi, LayerId, ViewPreset } from './api';
+import { finite, identifier, text } from '../data/validation.ts';
 
 export interface ToolParam {
   name: string;
@@ -32,7 +33,7 @@ export interface TwinTool {
 const SAFE = { destructive: false, longRunning: false, requiresConfirmation: false };
 
 export function buildToolSurface(api: AppApi): TwinTool[] {
-  return [
+  const tools: TwinTool[] = [
     {
       name: 'fly_to',
       description: 'Fly the camera to a lat/lon at an optional altitude (earth radii above surface).',
@@ -145,4 +146,27 @@ export function buildToolSurface(api: AppApi): TwinTool[] {
       invoke: () => api.startFollowTheLoad(),
     },
   ];
+  return tools.map((tool) => ({ ...tool, invoke(args: Record<string, unknown>) {
+    if (!args || typeof args !== 'object' || Array.isArray(args) ||
+        ![Object.prototype, null].includes(Object.getPrototypeOf(args)) || Object.getOwnPropertySymbols(args).length)
+      throw new Error('Tool arguments must be a plain object');
+    const properties = Object.getOwnPropertyDescriptors(args);
+    if (Object.keys(properties).some((key) => !tool.params.some((p) => p.name === key))) throw new Error('Unknown tool argument');
+    for (const param of tool.params) {
+      const property = properties[param.name];
+      if (!property) { if (param.required) throw new Error(`Missing ${param.name}`); continue; }
+      if (!('value' in property) || !property.enumerable || typeof property.value !== param.type) throw new Error(`Invalid ${param.name}`);
+      if (param.type === 'number') finite(property.value, param.name);
+      if (param.type === 'string') text(property.value, param.name);
+    }
+    if (tool.name === 'fly_to') {
+      finite(args.lat, 'lat', -90, 90); finite(args.lon, 'lon', -180, 180);
+      if (args.altitude !== undefined) finite(args.altitude, 'altitude', 0, 1000);
+    }
+    if (tool.name === 'set_time') finite(args.fraction, 'fraction', 0, 1);
+    if (tool.name === 'set_layer' && !api.getLayers().some((layer) => layer.id === args.layer)) throw new Error('Unknown layer');
+    if (tool.name === 'set_preset' && !['world', 'freight', 'trade', 'commodities', 'network', 'exceptions'].includes(args.preset as string)) throw new Error('Unknown preset');
+    if (tool.name === 'select_entity' && !api.store.entity(identifier(args.id, 'id'))) throw new Error('Unknown entity');
+    return tool.invoke(args);
+  } }));
 }

@@ -12,9 +12,10 @@
  * having to notice.
  */
 import { readdirSync, readFileSync, statSync } from 'node:fs';
-import { join, resolve, dirname, relative } from 'node:path';
+import { join, resolve, dirname, relative, isAbsolute } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(new URL('..', import.meta.url).pathname);
+const ROOT = fileURLToPath(new URL('..', import.meta.url));
 const DATA_DIR = join(ROOT, 'src', 'data');
 const ALLOWED_OUTSIDE = new Set([
   join(ROOT, 'src', 'core', 'events.ts'),
@@ -47,7 +48,10 @@ for (const file of walk(DATA_DIR)) {
     }
     const target = resolve(dirname(file), spec);
     const candidates = [target, `${target}.ts`, join(target, 'index.ts')];
-    const inData = candidates.some((c) => c.startsWith(DATA_DIR));
+    const inData = candidates.some((c) => {
+      const path = relative(DATA_DIR, c);
+      return path !== '..' && !path.startsWith('../') && !path.startsWith('..\\') && !isAbsolute(path);
+    });
     const allowed = candidates.some((c) => ALLOWED_OUTSIDE.has(c));
     if (!inData && !allowed) {
       violations.push(`${rel}: import '${spec}' escapes the semantic layer`);
