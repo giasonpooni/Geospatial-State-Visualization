@@ -1,5 +1,8 @@
 # Geospatial State Visualization — Architecture
 
+For the current public component inventory and integration boundaries, see the
+[Notation Systems stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) and [this component's role](STACK_ROLE.md).
+
 This document describes the implemented geographic state inspection client in
 Notation Systems' computational instrumentation stack. File references identify
 its contracts, implementation, and checks; intended boundaries are distinguished

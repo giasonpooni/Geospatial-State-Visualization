@@ -1,5 +1,9 @@
 # Geospatial State Visualization
 
+Part of **Notation Systems' computational instrumentation and evidence infrastructure** for industrial and cyber-physical systems.
+
+[Stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
+
 **Read-only visualization of geographic entities, routes, flows, and temporal state.**
 
 Geospatial State Visualization is the geographic inspection client in Notation
