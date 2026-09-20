@@ -1,10 +1,10 @@
 /**
  * Provider-independent spatial data interface.
  *
- * The digital-twin client only ever talks to this interface. The
- * synthetic demo provider implements it today; a Payload Spatial API
- * client implements it tomorrow (server-side spatial filtering,
- * vector tiles, viewport queries) without the renderer changing.
+ * The geographic state client obtains data through this interface.
+ * The synthetic demo provider implements load() and stateAt() today.
+ * No live data-service provider is implemented; query() and subscribe()
+ * are optional extension points.
  */
 
 import type {
@@ -37,11 +37,11 @@ export interface SpatialDataProvider {
   stateAt(entityId: EntityId, t: Timestamp): EntityState;
 
   /**
-   * Future: viewport-scoped incremental fetch (vector tiles / PostGIS
-   * window queries). The synthetic provider answers from memory.
+   * Optional viewport-scoped incremental fetch. Not implemented by
+   * the synthetic provider.
    */
   query?(viewport: ViewportQuery): Promise<Partial<WorldSnapshot>>;
 
-  /** Future: push-based updates from Payload canonical state. */
+  /** Optional push-based provider updates; not implemented in this build. */
   subscribe?(onDelta: (delta: Partial<WorldSnapshot>) => void): () => void;
 }

@@ -1,41 +1,67 @@
-# PAYLOAD OPERATING SYSTEM
+# Geospatial State Visualization
 
-**An interactive digital twin of the physical economy.**
+**Read-only visualization of geographic entities, routes, flows, and temporal state.**
 
-![Payload Earth — global network view](docs/media/global.png)
+Geospatial State Visualization is the geographic inspection client in Notation
+Systems' computational instrumentation stack. It projects provider-supplied
+state onto a Three.js globe, keeping entity identity, source provenance, time,
+and geometry basis visible alongside the result. It does not retain or govern
+canonical evidence, execute scientific workloads, or implement a general-purpose
+rendering engine.
+
+**Status: implemented browser client with a deterministic synthetic provider.**
+Facilities, four transport modes (road, rail, maritime, air), commodity-flow
+particles, a timeline, entity inspectors, search, and view commands are present.
+No live data provider, scientific runtime adapter, or workbench session/replay
+integration is implemented in this repository. Historical, current, and forecast
+labels describe positions within the synthetic dataset's time range.
+
+![Geospatial State Visualization — global network view](docs/media/global.png)
 
 | Night-side economy | Route inspector |
 | --- | --- |
 | ![Asia at night](docs/media/asia-night.png) | ![Route inspector](docs/media/route-inspector.png) |
 
-Payload Earth renders the machinery of trade — ports, rail terminals, refineries,
-warehouses, chokepoints — on a dark, cinematic WebGL globe. Four transport modes
-(road, rail, maritime, air) are drawn as first-class semantic routes; commodity
-flows animate along them as GPU particle streams; a global timeline scrubs the
-world through historical, current, and forecast state; an intelligence inspector
-exposes every entity's promises, evidence, and deviations; and a single command
-bar drives the whole instrument. It is built as a strict projection of Payload
-state: the renderer draws the world, it never owns it.
+The screenshots retain the earlier display branding; they illustrate the same
+synthetic client.
 
----
+## Responsibility in the stack
 
-> ## DATA DISCLAIMER
->
-> **Every record in this build is synthetic.** All entities carry
-> `provenance.source: 'synthetic:demo'` — the same queryable field a real
-> record will carry (`'external:ais'`, `'payload:spatial'`, ...). There are
-> no real shipments, no real utilization figures, and no claims about the
-> actual state of any facility or route. "Is this real?" is answered by
-> querying the provenance field on the record itself, never by remembering
-> which build you are looking at. The build fails if any record lacks a
-> source (see `npm run check` below).
+| Component | Responsibility |
+| --- | --- |
+| [Provenance-Preserving Data Acquisition](https://github.com/giasonpooni/Provenance-Preserving-Data-Acquisition) | Acquire source material and retain observation lineage. |
+| [Evidence and State Management](https://github.com/giasonpooni/Evidence-and-State-Management) | Retain and govern evidence, versioned state, admission, and release. |
+| [Scientific Computation Runtime](https://github.com/giasonpooni/Scientific-Computation-Runtime) | Specify, dispatch, and record declared scientific computations. |
+| [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operate and inspect instruments through sessions and adapters. |
+| **Geospatial State Visualization** | Project geographic state through a provider interface for read-only inspection. |
 
----
+These are responsibility boundaries, not a claim that cross-repository adapters
+are connected in this build. View commands change camera, selection, layers, or
+playback; they do not admit evidence or commit canonical state.
+
+## Synthetic data and provenance
+
+Every domain record in the supplied snapshot carries
+`provenance.source: 'synthetic:demo'`. The demo makes no claims about actual
+shipments, facility utilization, or route conditions. The provenance check
+executes the dataset and checks source-field presence; it does not validate
+source authenticity or physical accuracy. Background map topology is described
+separately in the architecture document.
+
+The inspector presents record provenance, assertions, observations, and derived
+deviations. Geometry basis remains distinct from route identity. Source-known
+time (`knownAt`) and validity time (`validFrom` / `validTo`) remain distinct
+fields. The persistent status chip labels this build as synthetic.
 
 ## Quickstart
 
-```
-npm install
+Use Node.js 24 or newer so the existing provenance script can execute erasable
+TypeScript directly. Clone the current repository location:
+
+```sh
+git clone https://github.com/giasonpooni/Geospatial-State-Visualization.git
+cd Geospatial-State-Visualization
+npm ci
 npm run dev      # Vite dev server
 npm run build    # runs check, then production build
 npm run check    # seam + provenance + types
@@ -94,6 +120,15 @@ The engineering record — the data/render seam, provenance discipline, the
 Assertion/Observation/Deviation model, the provider interface, the rendering
 pipeline, and the temporal model — lives in
 [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
+
+## Naming and compatibility
+
+The repository was previously named `PayloadOS-Render-Engine`. The technical
+name identifies its visualization responsibility. The local package name
+`payload-earth`, browser API `window.payloadEarth`, CSS namespaces, record and
+operation IDs, and source values such as `payload:spatial` remain compatible.
+A repository rename does not rewrite schema identity, evidence, execution
+records, or retained runtime pins.
 
 ## License
 

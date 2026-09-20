@@ -26,7 +26,8 @@ export function createCommandBar(api: AppApi): { el: HTMLElement } {
   mark.className = 'pe-cb-mark';
   const glyph = document.createElement('span');
   glyph.className = 'pe-cb-glyph';
-  mark.append(glyph, document.createTextNode('PAYLOAD'));
+  mark.title = 'Geospatial State Visualization';
+  mark.append(glyph, document.createTextNode('GEOSPATIAL'));
 
   const searchWrap = document.createElement('div');
   searchWrap.className = 'pe-cb-searchwrap';
@@ -35,7 +36,7 @@ export function createCommandBar(api: AppApi): { el: HTMLElement } {
   input.type = 'text';
   input.spellcheck = false;
   input.autocomplete = 'off';
-  input.placeholder = 'Search the physical economy…';
+  input.placeholder = 'Search geographic entities…';
   const dropdown = document.createElement('div');
   dropdown.className = 'pe-cb-suggest';
   dropdown.hidden = true;

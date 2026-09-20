@@ -2,7 +2,7 @@
   "name": "payload-earth",
   "private": true,
   "version": "0.1.0",
-  "description": "Payload Earth — interactive digital twin of the physical economy",
+  "description": "Geospatial State Visualization — read-only geographic entities, routes, flows, and temporal state",
   "type": "module",
   "scripts": {
     "dev": "vite",

@@ -1,5 +1,5 @@
 /**
- * Entry point: boot the twin, mount the instrument HUD, expose the
+ * Entry point: boot the geographic state client, mount the instrument HUD, expose the
  * structured tool surface for future agent bindings.
  */
 
@@ -62,7 +62,7 @@ async function start(): Promise<void> {
   };
 
   app.events.emit('toast', {
-    title: 'PAYLOAD EARTH ONLINE',
+    title: 'GEOSPATIAL STATE VISUALIZATION ONLINE',
     body: `${app.store.snapshot.meta.label} · ${app.store.snapshot.meta.disclaimer}`,
     tone: 'info',
   });

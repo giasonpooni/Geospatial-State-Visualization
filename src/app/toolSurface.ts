@@ -2,7 +2,7 @@
  * Structured tool surface over the AppApi facade — the GeoAgent
  * pattern: one registry of operations with metadata (description,
  * params, safety flags) that BOTH the human command bar and a future
- * agent binding (Payload agents, MCP, Strands, tool-use) consume.
+ * external agent binding can consume. No external binding is implemented.
  * The twin stays a mirror: every tool here is a VIEW operation;
  * nothing mutates canonical state, so nothing needs a confirmation
  * gate yet — the flags exist so gated operations can be added without

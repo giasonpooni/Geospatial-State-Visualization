@@ -1,20 +1,27 @@
-# PAYLOAD EARTH — ARCHITECTURE
+# Geospatial State Visualization — Architecture
 
-This document is the engineering record for the digital-twin client. The code
-is the ground truth; everything below cites the files that enforce it.
+This document describes the implemented geographic state inspection client in
+Notation Systems' computational instrumentation stack. File references identify
+its contracts, implementation, and checks; intended boundaries are distinguished
+from guarantees the checks enforce.
 
-## 1. The digital-twin stance
+## 1. The projection boundary
 
-The renderer is a **projection** of Payload state. It is never authoritative
-and never mutates canonical state. Everything visual — globe, routes, particle
-flows, panels — is derived from immutable snapshots handed across a typed
+The client is a **projection** of provider-supplied geographic state. It has no
+canonical-state write or evidence-admission API. Everything visual — globe,
+routes, particle flows, panels — is derived from snapshots handed across a typed
 boundary; view-level operations (select, focus, toggle layer, scrub time) act
-on the projection only.
+on the projection only. Snapshots are treated as read-only by the client design;
+the current TypeScript shapes and returned objects are not deeply immutable.
 
 `SyntheticProvider` supplies a `WorldSnapshot` to `WorldStore`. The `AppApi`
 facade exposes read-only state and view operations to the UI; the Earth and
 route layers project that state through Three.js. This build uses synthetic
-records and has no live Payload Spatial API connection.
+records and has no live data-service connection. Evidence and State Management
+has the separate information-governance role; Scientific Computation Runtime
+has the workload-execution role; Computational Instrumentation Workbench has the
+session, adapter, and replay role. This repository implements the visualization
+client and its provider boundary, not adapters to those components.
 
 State flows down; nothing flows back up. UI components receive `AppApi` and
 nothing else — they never import renderer internals and never mutate data
@@ -51,8 +58,10 @@ real dataset** (`buildWorldSnapshot()` from `src/data/synthetic/world.ts`)
 and fails the build if any node, route, flow, commodity, event, constraint,
 assertion, or observation lacks `provenance.source`.
 
-The point: **"is this real?" is a query, not a memory.** The inspector, the
-disclaimer, and inspector read the same field on each record.
+Source identity is carried by each record and displayed by the inspector.
+The status chip is a fixed synthetic-build label; its tooltip reads the
+snapshot's `meta.disclaimer`. Neither the chip nor the provenance-presence
+check authenticates a source or establishes physical correctness.
 
 Related: `Route.geometryBasis` (`'routed' | 'great_circle_estimate' |
 'synthetic_corridor'`) keeps *what the geometry is* queryable too — a straight
@@ -105,7 +114,7 @@ lon/lat, GeoJSON-compatible geometry subset):
 ### The provider interface
 
 `src/data/provider.ts` defines `SpatialDataProvider` — the only thing the
-twin client ever talks to for data:
+visualization client uses for data:
 
 ```ts
 interface SpatialDataProvider {
@@ -171,16 +180,17 @@ The command bar grammar lives in `src/app/commands.ts`: pure functions
 state, no DOM. The facade exposes: layer toggles, presets, search/focus, flow filtering, clock
 control, route comparison, the demo scenario.
 
-`src/app/toolSurface.ts` implements the GeoAgent pattern: **one structured
-registry of operations over `AppApi`** — each entry a name, a typed
+`src/app/toolSurface.ts` implements **one structured registry of operations
+over `AppApi`** — each entry a name, a typed
 parameter list, a description, an executor, and safety flags
-(`destructive` / `longRunning` / `requiresConfirmation`, all false today
-because every operation is a view operation on a mirror). The text grammar
-in `commands.ts` is one front end to the same facade; an agent binding
-(Payload agents, MCP, tool-use) consumes the registry directly — it is
-exposed at runtime as `window.payloadEarth.tools` with
-`window.payloadEarth.invokeTool(name, args)`. Capabilities stay defined
-once. The registry currently exposes view operations only.
+(`destructive` / `longRunning` / `requiresConfirmation`). All tools are
+non-destructive and require no confirmation; the Follow the Load demo sets
+`longRunning: true`. Every operation affects the view. The text grammar
+in `commands.ts` is one front end to the same facade. The registry is exposed
+at runtime as `window.payloadEarth.tools` with
+`window.payloadEarth.invokeTool(name, args)`. These existing browser API names
+remain stable across the repository rename. External agent/MCP bindings are
+not implemented here. The registry currently exposes view operations only.
 
 ## 8. Temporal model
 
@@ -210,32 +220,44 @@ to the same stream.
 
 ## 9. Scope
 
-This renderer presents synthetic network data at a planetary scale. It does not
-simulate physical facilities, vehicles, or ocean dynamics, and its forecasts
-are synthetic demo values rather than measured outcomes.
+This client presents synthetic network data at a planetary scale using
+Three.js. It is an implemented visualization application, not a general-purpose
+rendering engine, scientific simulator, evidence store, or replacement for the
+workbench. It does not simulate physical facilities, vehicles, or ocean
+dynamics, and its forecast values are synthetic demo values. No live provider,
+scientific runtime adapter, or workbench session/replay integration is present.
 
 ## 10. Display semantics
 
-These are product requirements of the whole platform, present in this
-renderer from the first record:
+The contracts and display conventions preserve the following distinctions:
 
 - **Provenance is a property of the record, not a label on the UI.**
   Every synthetic record carries `provenance.source: 'synthetic:demo'` in
   the same field a real record will carry `'external:ais'` — "is this
-  real?" is a query. The status bar's persistent SYNTHETIC / DEMO DATA
-  chip and every inspector's EVIDENCE section *read* that field; they do
-  not replace it.
+  real?" can be examined at the record level. Inspector evidence sections
+  expose that source. The status bar's fixed SYNTHETIC / DEMO DATA label
+  and snapshot-disclaimer tooltip describe the supplied demo build.
 - **A number carries its warrant.** The route inspector shows PROMISED
   transit (an `Assertion`) against OBSERVED transits (`Observation`s) and
   the resulting deviation with `n=` — never a bare number that forgets
   where it came from.
 - **Which kind of nothing.** `LifecycleStatus` includes `'unknown'` and the
-  palette reserves an unobserved tone (`UNKNOWN`, mirroring the
-  Terminal's `--unk`): the render channel for "we do not currently know"
-  exists before real telemetry does, so an 11-hour-old position is never
-  drawn as a confident dot.
+  palette reserves an unobserved tone (`UNKNOWN`). This supplies a display
+  category for missing knowledge; it is not an implemented telemetry-freshness
+  policy, and no live telemetry provider is present.
 - **Geometry states its basis.** `Route.geometryBasis`
   (`'routed' | 'great_circle_estimate' | 'synthetic_corridor'`) keeps the
   difference between a routed path and an estimate queryable. All
   distances derived in this client are great-circle estimates and are
   presented as such, never as road distance.
+
+## 11. Repository identity and compatibility
+
+The current repository is
+[`Geospatial-State-Visualization`](https://github.com/giasonpooni/Geospatial-State-Visualization),
+previously `PayloadOS-Render-Engine`. The package name `payload-earth`,
+`window.payloadEarth` browser API, `pe-` / `pi-` CSS namespaces, source values
+such as `payload:canonical` and `payload:spatial`, and record/operation IDs
+remain unchanged. Those identifiers are compatibility contracts, not display
+branding. Historical records and pinned execution identities are not rewritten
+when repository locations change.

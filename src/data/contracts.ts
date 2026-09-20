@@ -1,13 +1,12 @@
 /**
- * PAYLOAD EARTH — DATA CONTRACTS
+ * GEOSPATIAL STATE VISUALIZATION — DATA CONTRACTS
  * ------------------------------------------------------------------
- * Provider-independent schemas for the digital-twin renderer.
+ * Provider-independent schemas for the geographic state client.
  *
- * These contracts are the boundary between Payload's canonical state
- * (DAF → Canonical State → Spatial Corpus → PostGIS → Spatial API)
- * and the visualization client. The renderer consumes projections of
- * these shapes and NEVER mutates them: the digital twin is a
- * projection of Payload state, not a store of it.
+ * These contracts are the boundary between provider-supplied state
+ * and the visualization client. The client treats the supplied shapes
+ * as read-only; it exposes no canonical-state write or admission API.
+ * The current provider is synthetic; a live service is not connected.
  *
  * Every object carries a stable id plus provenance/temporal metadata
  * (source, knownAt, validFrom, validTo) so synthetic demo data can be
@@ -25,8 +24,8 @@ export type Timestamp = string;
 
 export type DataSource =
   | 'synthetic:demo' // clearly-labeled generated demo data
-  | 'payload:canonical' // future: Payload canonical state
-  | 'payload:spatial' // future: Payload spatial corpus
+  | 'payload:canonical' // retained source namespace; no live provider
+  | 'payload:spatial' // retained source namespace; no live provider
   | 'external:osm'
   | 'external:ais'
   | 'external:gov-gis'
