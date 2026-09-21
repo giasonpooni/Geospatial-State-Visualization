@@ -2,7 +2,7 @@
 
 Part of **Notation Systems' computational instrumentation and evidence infrastructure** for industrial and cyber-physical systems.
 
-[Stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
+[Diagram atlas](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/DIAGRAMS.md) · [Stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) · [Component role and interfaces](docs/STACK_ROLE.md)
 
 **Read-only visualization of geographic entities, routes, flows, and temporal state.**
 
@@ -19,6 +19,21 @@ particles, a timeline, entity inspectors, search, and view commands are present.
 No live data provider, scientific runtime adapter, or workbench session/replay
 integration is implemented in this repository. Historical, current, and forecast
 labels describe positions within the synthetic dataset's time range.
+
+```mermaid
+flowchart TD
+  P["Synthetic provider snapshot"] --> V{"Validate identity and records"}
+  V -->|"invalid or superseded"| R["Keep previous active snapshot"]
+  V -->|"eligible replacement"| S["Immutable WorldStore"]
+  S --> T["Checked state and comparisons"]
+  C["Explicit simulation cursor"] --> T
+  T --> G["Globe, timeline and inspector"]
+  U["View commands"] --> G
+```
+
+The arrows describe local read and projection paths. Provenance, geometry basis
+and declared times stay attached to displayed records. View controls change the
+presentation; there is no canonical-state write or evidence-admission path.
 
 ![Geospatial State Visualization — global network view](docs/media/global.png)
 

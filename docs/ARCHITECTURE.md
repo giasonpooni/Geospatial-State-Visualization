@@ -2,6 +2,7 @@
 
 For the current public component inventory and integration boundaries, see the
 [Notation Systems stack map](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/STACK.md) and [this component's role](STACK_ROLE.md).
+The [diagram atlas](https://github.com/giasonpooni/Computational-Instrumentation-Workbench/blob/main/docs/DIAGRAMS.md) collects the system views.
 
 This document describes the implemented geographic state inspection client in
 Notation Systems' computational instrumentation stack. File references identify
@@ -107,6 +108,30 @@ overwritten by outcomes: the deviation history *is* the point. A twin that
 replaces its estimate with the actual forgets that it was wrong; this one
 keeps both records so it can show where its own estimates run optimistic —
 per entity, per metric, over time.
+
+### Comparison without overwriting source records
+
+```mermaid
+flowchart TD
+  A["Assertion with applicability"] --> G{"Identity, unit and time eligibility"}
+  O["Observation records"] --> G
+  W["knownAt and event window"] --> G
+  G -->|"excluded records"| X["IDs and exclusion reasons"]
+  G -->|"compatible observations"| M["Descriptive arithmetic mean"]
+  G -->|"no compatible observations"| U["Unavailable with null comparison"]
+  M -->|"finite aggregate"| D["Delta and nullable ratio"]
+  M -->|"nonfinite aggregate"| U
+  D --> I["Inspector with full source lineage"]
+  U --> I
+  X --> I
+```
+
+Solid arrows summarize `WorldStore.deviationsFor` and the inspector. The
+knowledge cutoff is distinct from the half-open event-time window. Units must
+match explicitly; an absent unit is not inferred. A zero assertion gives a
+`null` ratio, not an infinite score. Record count does not establish independent
+evidence or precision. Every comparison is a read-only derivation: neither the
+assertion nor its observations are replaced by the resulting mean or deviation.
 
 ## 5. Data contracts inventory
 
