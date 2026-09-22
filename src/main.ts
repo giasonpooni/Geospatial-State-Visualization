@@ -13,15 +13,40 @@ import { createStatusBar } from './ui/statusBar';
 import { createToasts } from './ui/toasts';
 import { createInfoPanel } from './ui/infoPanel';
 import { createTimeline } from './ui/timeline';
+import { CiwReadClient } from './app/ciwClient';
+import { WorkbenchProvider } from './data/workbench/provider';
 
 async function start(): Promise<void> {
   const canvas = document.getElementById('scene') as HTMLCanvasElement;
   const hud = document.getElementById('hud') as HTMLElement;
 
   const app = new App();
+  const parameters = new URLSearchParams(window.location.search);
+  let provider: WorkbenchProvider | undefined;
+  let client: CiwReadClient | undefined;
   try {
-    await app.boot(canvas, hud);
+    if (parameters.has('ciw') || parameters.has('source')) {
+      const status = document.createElement('div');
+      status.className = 'pe-ciw-status';
+      status.textContent = 'CONNECTING TO CIW';
+      hud.appendChild(status);
+      client = new CiwReadClient(parameters.get('ciw') ?? '', (message) => { status.textContent = message; });
+      provider = new WorkbenchProvider(() => client!.inspect(parameters.get('source') ?? ''));
+      await app.boot(canvas, hud, provider);
+      const detail = document.createElement('details');
+      detail.className = 'pe-ciw-evidence';
+      const title = document.createElement('summary');
+      title.textContent = 'WORKBENCH EVIDENCE · FRAME · TIME';
+      const evidence = document.createElement('pre');
+      const { bytes_b64, ...descriptor } = provider.view.source;
+      evidence.textContent = JSON.stringify({ source: descriptor, frame: provider.view.coordinate_frame,
+        timeRange: app.store.snapshot.timeRange, state_policy: provider.view.state_policy,
+        authority: provider.view.authority }, null, 2);
+      detail.append(title, evidence); hud.appendChild(detail);
+      window.addEventListener('pagehide', () => client?.close(), { once: true });
+    } else await app.boot(canvas, hud);
   } catch (err) {
+    client?.close();
     const status = document.getElementById('boot-status');
     if (status) status.textContent = `BOOT FAILED — ${String(err)}`;
     throw err;
@@ -54,6 +79,7 @@ async function start(): Promise<void> {
   (window as unknown as Record<string, unknown>).payloadEarth = {
     api: app,
     tools,
+    workbenchView: provider?.view ?? null,
     invokeTool: (name: string, args: Record<string, unknown> = {}) => {
       const tool = tools.find((t) => t.name === name);
       if (!tool) throw new Error(`unknown tool: ${name}`);

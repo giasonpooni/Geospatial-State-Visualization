@@ -84,6 +84,8 @@ export class WorldStore {
     return this.snap;
   }
 
+  get providerId(): string { return this.provider.id; }
+
   private buildIndexes(snapshot: WorldSnapshot) {
     const nodeIx = new Map<EntityId, Facility>();
     const routeIx = new Map<EntityId, Route>();

@@ -16,6 +16,7 @@ import type {
 } from '../data/contracts';
 import { WorldStore, type SearchResult } from '../data/store';
 import { SyntheticProvider } from '../data/synthetic/provider';
+import type { SpatialDataProvider } from '../data/provider';
 import { EventBus } from '../core/events';
 import { SimClock } from '../core/time';
 import { Engine } from '../core/engine';
@@ -83,7 +84,7 @@ export class App implements AppApi {
 
   // ------------------------------------------------------------------ boot
 
-  async boot(canvas: HTMLCanvasElement, hud: HTMLElement): Promise<void> {
+  async boot(canvas: HTMLCanvasElement, hud: HTMLElement, provider: SpatialDataProvider = new SyntheticProvider()): Promise<void> {
     const progress = (pct: number, msg: string) => {
       const fill = document.getElementById('boot-fill');
       const status = document.getElementById('boot-status');
@@ -91,8 +92,8 @@ export class App implements AppApi {
       if (status) status.textContent = msg;
     };
 
-    progress(8, 'LOADING SYNTHETIC CORPUS');
-    const snapshot = await this.store.init(new SyntheticProvider());
+    progress(8, 'LOADING ' + provider.label.toUpperCase());
+    const snapshot = await this.store.init(provider);
 
     progress(24, 'LOADING WORLD TOPOLOGY');
     const [countries, textures] = await Promise.all([
