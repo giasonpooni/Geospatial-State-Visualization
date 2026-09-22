@@ -216,7 +216,7 @@ export function createInfoPanel(api: AppApi): { el: HTMLElement } {
     requestAnimationFrame(() =>
       drawSparkline(canvas, points, { min: 0, max: 1, markerT, nowT: nowMs, color })
     );
-    return section(title, canvas);
+    return section(api.store.providerId === 'ciw:geographic-context' ? 'DECLARED CONSTANT UTILIZATION' : title, canvas);
   }
 
   function evidence(
@@ -235,7 +235,10 @@ export function createInfoPanel(api: AppApi): { el: HTMLElement } {
       holder.append(chip);
       chipWrap.append(holder);
       rows.push(chipWrap);
-      rows.push(kv('KNOWN AT', prov.knownAt.slice(0, 10)));
+      rows.push(kv('KNOWN AT', prov.knownAt));
+      if (prov.validFrom) rows.push(kv('VALID FROM', prov.validFrom));
+      if (prov.validTo) rows.push(kv('VALID TO (EXCLUSIVE)', prov.validTo));
+      for (const reference of prov.evidence ?? []) rows.push(kv('EVIDENCE REF', reference));
       if (prov.confidence !== undefined) rows.push(kv('CONFIDENCE', fmtPct(prov.confidence)));
     }
     for (const [k, v] of extraRows ?? []) rows.push(kv(k, v));

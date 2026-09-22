@@ -36,6 +36,8 @@ export function createStatusBar(api: AppApi): { el: HTMLElement } {
   const syncDisclaimer = (): void => {
     try {
       chip.title = api.store.snapshot.meta.disclaimer;
+      chip.textContent = api.store.providerId === 'ciw:geographic-context'
+        ? 'CIW · DECLARED GEOGRAPHIC CONTEXT' : 'SYNTHETIC / DEMO DATA';
     } catch {
       /* snapshot not loaded yet */
     }

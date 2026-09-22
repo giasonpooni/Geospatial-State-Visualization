@@ -13,12 +13,16 @@ and geometry basis visible alongside the result. It does not retain or govern
 canonical evidence, execute scientific workloads, or implement a general-purpose
 rendering engine.
 
-**Status: implemented browser client with a deterministic synthetic provider.**
+**Status: implemented browser client with a deterministic synthetic provider and a read-only CIW geographic-context provider.**
 Facilities, four transport modes (road, rail, maritime, air), commodity-flow
 particles, a timeline, entity inspectors, search, and view commands are present.
-No live data provider, scientific runtime adapter, or workbench session/replay
-integration is implemented in this repository. Historical, current, and forecast
-labels describe positions within the synthetic dataset's time range.
+The workbench provider reads an explicitly selected retained source from the
+shared CIW session, checks its exact-byte and descriptor identities, and uses
+the existing native snapshot/state validators and globe. The first connection
+supports declared CRS84 facility points with fully declared constant state over
+an explicit validity range. It does not convert local process or GTE coordinates
+to latitude/longitude. Historical, current, and forecast labels describe cursor
+positions within the selected dataset's time range.
 
 ```mermaid
 flowchart TD
@@ -54,9 +58,9 @@ synthetic client.
 | [Computational Instrumentation Workbench](https://github.com/giasonpooni/Computational-Instrumentation-Workbench) | Operate and inspect instruments through sessions and adapters. |
 | **Geospatial State Visualization** | Project geographic state through a provider interface for read-only inspection. |
 
-These are responsibility boundaries, not a claim that cross-repository adapters
-are connected in this build. View commands change camera, selection, layers, or
-playback; they do not admit evidence or commit canonical state.
+The CIW geographic provider implements the read-only workbench connection.
+View commands change camera, selection, layers, or playback; they do not admit
+evidence or commit canonical state.
 
 ## Synthetic data and provenance
 
@@ -101,6 +105,34 @@ replacement. Comparisons require an explicit knowledge cutoff and half-open
 event-time window; missing or different units are not converted implicitly,
 and a zero assertion has an undefined (`null`) ratio. See
 [`docs/PROVIDER_BOUNDARY.md`](docs/PROVIDER_BOUNDARY.md) for API changes and limits.
+
+## Open a retained workbench geographic context
+
+Start CIW with an explicit browser origin (example for the Vite development
+server): `ciw serve --spatial-view-origin http://127.0.0.1:5173`. Retain
+`examples/workbench/geographic-context.json` through CIW's ordinary `source.add`
+operation with `kind: geographic-context`, a label, and exact `bytes_b64`.
+The example contains invented plants and states, visibly marked synthetic.
+
+Start this viewer with `npm run dev -- --host 127.0.0.1`, then open:
+
+```text
+http://127.0.0.1:5173/?ciw=ws://127.0.0.1:8765/spatial&source=source:sha256:YOUR_RETAINED_SOURCE_DIGEST
+```
+
+The server's `/spatial` connection permits only geographic listing and inspection.
+Its browser Origin must match the configured origin exactly. The viewer keeps
+the explicit source selection; a catalog change does not switch evidence.
+Connection loss leaves the retained snapshot available and marks it offline.
+The evidence panel retains the source/evidence identities, coordinate authority,
+time range, and view authority. Facility inspectors show complete known/valid
+times and evidence references. Full constant states are required; missing
+utilization, congestion, validity or frame authority refuse loading.
+
+This is a projection of declared evidence. It creates no execution, result,
+verification or admission identity. No covariance is supplied or invented.
+Local GTE geometry remains in its declared frame until an explicit compatible
+geographic transform exists. See [the contract and tests](docs/CIW_GEOGRAPHIC_VIEW.md).
 
 ## Controls & interaction
 

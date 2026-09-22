@@ -744,3 +744,6 @@ input {
     transform: translateX(0);
   }
 }
+.pe-ciw-status { position: absolute; left: 24px; top: 68px; max-width: 50vw; font: 11px monospace; color: #c7e7ef; pointer-events: none; }
+.pe-ciw-evidence { position: absolute; left: 24px; top: 88px; z-index: 30; max-width: min(720px, 75vw); max-height: 55vh; overflow: auto; padding: 8px; background: #101a23ed; color: #c7e7ef; font: 11px monospace; pointer-events: auto; }
+.pe-ciw-evidence pre { white-space: pre-wrap; overflow-wrap: anywhere; }

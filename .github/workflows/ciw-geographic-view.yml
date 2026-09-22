@@ -1,0 +1,38 @@
+name: Geographic provider and workbench view
+on:
+  push:
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  native-provider:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+  shared-session:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/checkout@v4
+        with:
+          repository: giasonpooni/Computational-Instrumentation-Workbench
+          ref: e63505fbd1edaaf5a515506d27d0549f52aaf60e
+          path: ciw-provider
+      - name: Install exact CIW as a wheel
+        run: |
+          python -m pip wheel --no-deps ./ciw-provider --wheel-dir /tmp/ciw-wheels
+          python -m pip install /tmp/ciw-wheels/*.whl
+      - name: Exercise real shared WebSocket and native GSV provider
+        run: python scripts/check-ciw-live.py --source ciw-provider/examples/workbench/geographic-context.json
